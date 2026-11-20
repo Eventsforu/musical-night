@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Organiser – Ticket generator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Ticket generator</h1><p>Organiser use only – do not share this page's address.</p></header>
+
+  <div class="card">
+    <h2>1. Create a ticket after you've seen the payment</h2>
+    <label class="field">Booking reference (from the Monzo payment)
+      <input type="text" id="ref" placeholder="e.g. MN-F2-7K3Q" autocapitalize="characters" autocomplete="off">
+    </label>
+    <label class="field">Customer name
+      <input type="text" id="name" autocomplete="off">
+    </label>
+    <div class="err" id="err"></div>
+    <button id="make">Create ticket &amp; add to paid list</button>
+    <div id="out" class="hidden">
+      <canvas id="cv" class="ticket"></canvas>
+      <a class="btn" id="dl" href="#" download="ticket.png">Download ticket image</a>
+      <p class="note">Send the image to the customer by email or WhatsApp.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Paid list (for the door)</h2>
+    <p class="note">Each ticket you create is saved here, on this device only. Copy the list and paste it into the door page on the phone you'll use at the entrance. Check the Monzo amount matches the tickets before you create a ticket.</p>
+    <p><strong id="count">0</strong> bookings · <strong id="people">0</strong> people</p>
+    <button class="alt" id="copy">Copy paid list</button>
+    <label class="field" style="margin-top:14px">Restore / add a list (one per line: REFERENCE,Name)
+      <textarea id="import" rows="3"></textarea>
+    </label>
+    <button class="alt" id="imp">Add these to the list</button>
+    <div id="list" style="margin-top:12px"></div>
+    <button class="alt" id="clear" style="margin-top:14px">Clear list</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="qrcode.js"></script>
+<script>
+const KEY = "paidlist-" + SITE.refPrefix;
+let list = [];
+try { list = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { list = []; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} };
+const showErr = m => { $("err").textContent = m; $("err").style.display = m ? "block" : "none"; };
+
+function renderList() {
+  const el = $("list"); el.innerHTML = "";
+  let people = 0;
+  list.forEach(b => {
+    const p = parseRef(b.ref); if (p) people += p.qty;
+    const d = document.createElement("div");
+    d.className = "note"; d.style.padding = "4px 0"; d.style.borderTop = "1px solid var(--line)";
+    d.textContent = b.ref + " · " + b.name + (p ? " · " + p.qty + "× " + p.ticket.label : "");
+    el.appendChild(d);
+  });
+  $("count").textContent = list.length; $("people").textContent = people;
+}
+
+function drawTicket(info, name) {
+  const W = 600, H = 900, cv = $("cv"), c = cv.getContext("2d");
+  cv.width = W; cv.height = H;
+  c.fillStyle = "#fff"; c.fillRect(0, 0, W, H);
+  const g = c.createLinearGradient(0, 0, W, 200); g.addColorStop(0, "#c2410c"); g.addColorStop(1, "#7c2d12");
+  c.fillStyle = g; c.fillRect(0, 0, W, 210);
+  c.fillStyle = "#fff"; c.textAlign = "center";
+  c.font = "bold 40px system-ui, sans-serif"; c.fillText(SITE.eventName, W / 2, 90, W - 60);
+  c.font = "24px system-ui, sans-serif"; c.fillText(SITE.when, W / 2, 135, W - 60);
+  c.fillText(SITE.where, W / 2, 172, W - 60);
+
+  c.fillStyle = "#1f1b16"; c.font = "bold 34px system-ui, sans-serif";
+  c.fillText(info.ticket.label, W / 2, 270, W - 60);
+  c.font = "bold 56px system-ui, sans-serif"; c.fillStyle = "#c2410c";
+  c.fillText("Admits " + info.qty, W / 2, 340);
+  c.fillStyle = "#1f1b16"; c.font = "28px system-ui, sans-serif";
+  c.fillText(name, W / 2, 392, W - 60);
+
+  const qr = qrcode(0, "M"); qr.addData(info.ref); qr.make();
+  const n = qr.getModuleCount(), size = 380, cell = Math.floor(size / (n + 8)), qs = cell * n;
+  const x0 = (W - qs) / 2, y0 = 430;
+  c.fillStyle = "#fff"; c.fillRect(x0 - cell * 2, y0 - cell * 2, qs + cell * 4, qs + cell * 4);
+  c.fillStyle = "#000";
+  for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) if (qr.isDark(r, q)) c.fillRect(x0 + q * cell, y0 + r * cell, cell, cell);
+
+  c.fillStyle = "#1f1b16"; c.font = "bold 38px ui-monospace, monospace";
+  c.fillText(info.ref, W / 2, y0 + qs + 70);
+  c.fillStyle = "#6b6358"; c.font = "20px system-ui, sans-serif";
+  c.fillText("Show this QR code at the entrance", W / 2, y0 + qs + 110);
+  $("dl").href = cv.toDataURL("image/png");
+  $("dl").download = "ticket-" + info.ref + ".png";
+}
+
+$("make").addEventListener("click", () => {
+  const info = parseRef($("ref").value);
+  const name = $("name").value.trim();
+  if (!info) return showErr("That reference isn't valid. It should look like " + SITE.refPrefix + "-" + SITE.tickets[0].code + "1-AB12.");
+  if (!name) return showErr("Enter the customer's name.");
+  showErr("");
+  if (!list.some(b => b.ref === info.ref)) { list.push({ ref: info.ref, name }); save(); renderList(); }
+  drawTicket(info, name);
+  $("out").classList.remove("hidden");
+});
+
+$("copy").addEventListener("click", async () => {
+  const text = list.map(b => b.ref + "," + b.name.replace(/[,\n]/g, " ")).join("\n");
+  try { await navigator.clipboard.writeText(text); $("copy").textContent = "Copied ✓"; }
+  catch (e) { $("import").value = text; $("import").select(); $("copy").textContent = "Copy it from the box below"; }
+  setTimeout(() => $("copy").textContent = "Copy paid list", 2500);
+});
+$("imp").addEventListener("click", () => {
+  $("import").value.split("\n").forEach(line => {
+    const [r, ...rest] = line.split(",");
+    const info = parseRef(r);
+    if (info && !list.some(b => b.ref === info.ref)) list.push({ ref: info.ref, name: rest.join(",").trim() || "Guest" });
+  });
+  save(); renderList(); $("import").value = "";
+});
+$("clear").addEventListener("click", () => {
+  if ($("clear").dataset.sure) { list = []; save(); renderList(); $("clear").textContent = "Clear list"; delete $("clear").dataset.sure; }
+  else { $("clear").dataset.sure = "1"; $("clear").textContent = "Tap again to confirm"; setTimeout(() => { $("clear").textContent = "Clear list"; delete $("clear").dataset.sure; }, 3000); }
+});
+renderList();
+</script>
+</body>
+</html>

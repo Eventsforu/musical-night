@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Door check-in</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Door check-in</h1><p>Staff use only.</p></header>
+
+  <div class="card">
+    <h2>Scan a ticket</h2>
+    <video id="video" playsinline muted class="hidden"></video>
+    <button id="cam">Start camera</button>
+    <label class="field" style="margin-top:14px">Or type the reference
+      <input type="text" id="manual" placeholder="e.g. MN-F2-7K3Q" autocapitalize="characters" autocomplete="off">
+    </label>
+    <button class="alt" id="check">Check reference</button>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h2>Paid list</h2>
+    <p><strong id="inCount">0</strong> of <strong id="total">0</strong> people checked in · <strong id="bookings">0</strong> bookings loaded</p>
+    <label class="field">Paste the paid list here (one per line: REFERENCE,Name)
+      <textarea id="paste" rows="4"></textarea>
+    </label>
+    <button class="alt" id="load">Load / add to list</button>
+    <button class="alt" id="reset">Reset all check-ins</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="jsqr.js"></script>
+<script>
+const KEY = "doorlist-" + SITE.refPrefix;
+let db = { bookings: {} }; // ref -> {name, qty, label, used}
+try { db = JSON.parse(localStorage.getItem(KEY) || '{"bookings":{}}'); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} };
+
+function stats() {
+  let tot = 0, used = 0, n = 0;
+  Object.values(db.bookings).forEach(b => { tot += b.qty; used += b.used; n++; });
+  $("total").textContent = tot; $("inCount").textContent = used; $("bookings").textContent = n;
+}
+
+$("load").addEventListener("click", () => {
+  $("paste").value.split("\n").forEach(line => {
+    const [r, ...rest] = line.split(",");
+    const p = parseRef(r);
+    if (p && !db.bookings[p.ref]) db.bookings[p.ref] = { name: rest.join(",").trim() || "Guest", qty: p.qty, label: p.ticket.label, used: 0 };
+  });
+  save(); stats(); $("paste").value = "";
+});
+$("reset").addEventListener("click", () => {
+  const b = $("reset");
+  if (b.dataset.sure) { Object.values(db.bookings).forEach(x => x.used = 0); save(); stats(); b.textContent = "Reset all check-ins"; delete b.dataset.sure; }
+  else { b.dataset.sure = "1"; b.textContent = "Tap again to confirm reset"; setTimeout(() => { b.textContent = "Reset all check-ins"; delete b.dataset.sure; }, 3000); }
+});
+
+function show(cls, html, actions) {
+  const r = $("result"); r.innerHTML = "";
+  const d = document.createElement("div"); d.className = "result " + cls; d.innerHTML = html;
+  r.appendChild(d);
+  (actions || []).forEach(a => { const b = document.createElement("button"); b.textContent = a.text; if (a.cls) b.className = a.cls; b.onclick = a.fn; r.appendChild(b); });
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+let lastRef = "", lastAt = 0;
+function lookup(text) {
+  const p = parseRef(text);
+  if (!p) return show("fail", '<div class="big">✗ Not a valid ticket</div>' + esc(text));
+  const b = db.bookings[p.ref];
+  if (!b) return show("fail", '<div class="big">✗ Not on the paid list</div>' + esc(p.ref) + "<br>Check the Monzo payment, or reload the paid list.");
+  const left = b.qty - b.used;
+  const head = esc(b.name) + " · " + esc(b.label) + "<br>" + esc(p.ref);
+  if (left <= 0) return show("warn", '<div class="big">⚠ Already used</div>' + head + "<br>All " + b.qty + " admitted.");
+  const acts = [];
+  acts.push({ text: "Admit all " + left, cls: "ok", fn: () => { b.used = b.qty; save(); stats(); show("good", '<div class="big">✓ Admitted ' + left + "</div>" + head); } });
+  if (left > 1) acts.push({ text: "Admit 1 only", cls: "alt", fn: () => { b.used += 1; save(); stats(); lookup(p.ref); } });
+  show("good", '<div class="big">✓ Valid – ' + left + " of " + b.qty + " to admit</div>" + head, acts);
+}
+$("check").addEventListener("click", () => lookup($("manual").value));
+
+/* camera scanning */
+let stream = null, scanning = false;
+$("cam").addEventListener("click", async () => {
+  if (scanning) { stopCam(); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  } catch (e) { return show("warn", "Couldn't open the camera. Allow camera access, or type the reference instead."); }
+  const v = $("video"); v.srcObject = stream; v.classList.remove("hidden"); await v.play();
+  scanning = true; $("cam").textContent = "Stop camera"; requestAnimationFrame(tick);
+});
+function stopCam() {
+  scanning = false; if (stream) stream.getTracks().forEach(t => t.stop());
+  $("video").classList.add("hidden"); $("cam").textContent = "Start camera";
+}
+const cvs = document.createElement("canvas"), ctx = cvs.getContext("2d", { willReadFrequently: true });
+function tick() {
+  if (!scanning) return;
+  const v = $("video");
+  if (v.readyState === v.HAVE_ENOUGH_DATA) {
+    cvs.width = v.videoWidth; cvs.height = v.videoHeight;
+    ctx.drawImage(v, 0, 0);
+    const img = ctx.getImageData(0, 0, cvs.width, cvs.height);
+    const code = jsQR(img.data, img.width, img.height);
+    if (code && code.data) {
+      const now = Date.now();
+      if (code.data !== lastRef || now - lastAt > 4000) { lastRef = code.data; lastAt = now; lookup(code.data); }
+    }
+  }
+  requestAnimationFrame(tick);
+}
+stats();
+</script>
+</body>
+</html>
