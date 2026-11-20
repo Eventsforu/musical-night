@@ -6,8 +6,8 @@ const SITE = {
   about: "An evening of live music with great local artists. Time for Families to get togeter for little relaxation and fun.Live band by MusicVifs (Telugu, Tamil, Hindi) & Dance performance by Vbeatz creative, Free entry for Under 12 Years",
   contact: "Questions? Email raghava.bezwada@gmail.com",
 
-  // Your Monzo.me link WITHOUT an amount, e.g. "https://monzo.me/musicnight"
-  monzoBase: "https://monzo.me/raghavabezwada",
+  // Your Monzo.me link WITHOUT an amount, e.g. "https://revolut.me/musicnight"
+  monzoBase: "https://revolut.me/raghav2zt",
 
   // Where customers send their booking details after paying (so you know who to send the ticket to).
   // Email address, and/or WhatsApp number in international format with no + or spaces, e.g. "447700900123". Leave "" to hide.
