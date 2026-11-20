@@ -3,7 +3,7 @@ const SITE = {
   eventName: "Live Music Night",
   when: "Friday 04 December 2026 · from 6:30pm to 9:30pm",
   where: "Winchburgh Bowling Centre, Craigton Place, Winchburgh, EH52 6RW",
-  about: "An evening of live music with great local artists. Time for Families to get togeter for little relaxation and fun.Live band by MusicVifs (Telugu, Tamil, Hindi) & Dance performance by Vbeatz creative.",
+  about: "An evening of live music with great local artists. Time for Families to get togeter for little relaxation and fun.Live band by MusicVifs (Telugu, Tamil, Hindi) & Dance performance by Vbeatz creative, Free entry for Under 12 Years"
   contact: "Questions? Email raghava.bezwada@gmail.com",
 
   // Your Monzo.me link WITHOUT an amount, e.g. "https://monzo.me/musicnight"
@@ -19,8 +19,8 @@ const SITE = {
 
   // "code" is one letter used inside the reference (M = music only, F = food). Keep codes unique.
   tickets: [
-    { code: "M", label: "Music only",   desc: "Entry to the live music show", price: 10, food: false },
-    { code: "F", label: "Music + Food", desc: "Entry plus a meal",            price: 20, food: true  }
+    { code: "M", label: "Music only",   desc: "Entry to the live music show", price: 5, food: false },
+    { code: "F", label: "Music + Food", desc: "Entry plus a meal",            price: 10, food: true  }
   ]
 };
 /* ============================================= */
