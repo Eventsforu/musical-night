@@ -28,7 +28,9 @@
     <div class="total"><span>Total</span><span id="total"></span></div>
 
     <h2 style="margin-top:22px">2. Your details</h2>
-    <label class="field">Full name <input type="text" id="name" autocomplete="name"></label>
+    <label class="field">Full name <span style="color:#b91c1c">*</span> <input type="text" id="name" autocomplete="name" required></label>
+    <label class="field">Email address <span style="color:#b91c1c">*</span> <input type="email" id="email" autocomplete="email" required></label>
+    <label class="field">Phone number <span style="color:#b91c1c">*</span> <input type="tel" id="phone" autocomplete="tel" required></label>
     <p class="note hidden" id="dietWrap" style="background:#fff4ec;border:1px solid var(--line);border-radius:10px;padding:10px 12px"><strong>Food allergy notice:</strong> our food may contain or come into contact with common allergens such as nuts, gluten, milk, eggs and soya. If you or anyone in your group has an allergy or dietary requirement, please speak to a member of our team on the day before you eat.</p>
     <div class="err" id="err"></div>
     <button type="submit">Continue to payment</button>
@@ -87,7 +89,11 @@ const showErr = m => { $("err").textContent = m; $("err").style.display = m ? "b
 $("form").addEventListener("submit", ev => {
   ev.preventDefault();
   const name = $("name").value.trim();
-  if (!name) return showErr("Please enter your name.");
+  const email = $("email").value.trim(), phone = $("phone").value.trim();
+  if (!name) return showErr("Please enter your full name.");
+  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr("Please enter a valid email address.");
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10 || digits.length > 15) return showErr("Please enter a valid phone number.");
   showErr("");
   const q = qty(), amt = selected.price * q;
   const ref = makeRef(selected.code, q);
@@ -101,7 +107,7 @@ $("form").addEventListener("submit", ev => {
   $("payAmt").textContent = money(amt);
   $("payNote").textContent = ref;
   $("refBox").textContent = ref;
-  const rows = [["Name", name],
+  const rows = [["Name", name], ["Email", email], ["Phone", phone],
     ["Tickets", q + " × " + selected.label],
     ["Children under 12 (free)", String(kids())],
     ["Amount", money(amt)]];
