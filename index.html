@@ -44,11 +44,6 @@
     <div class="ref" id="refBox"></div>
     <p class="note" style="text-align:center">Keep this reference. Take a screenshot now.</p>
     <dl id="summary"></dl>
-    <div id="manualPay" class="hidden" style="background:#fff4ec;border:2px solid var(--accent);border-radius:12px;padding:14px;margin-top:12px">
-      <p style="margin:0 0 6px"><strong>When Revolut opens, enter exactly:</strong></p>
-      <p style="margin:0">Amount: <strong id="payAmt"></strong> <button type="button" class="alt" id="copyAmt" style="display:inline-block;width:auto;padding:4px 10px;margin:0 0 0 6px;font-size:.85rem">Copy</button></p>
-      <p style="margin:6px 0 0">Note / reference: <strong id="payNote"></strong> <button type="button" class="alt" id="copyNote" style="display:inline-block;width:auto;padding:4px 10px;margin:0 0 0 6px;font-size:.85rem">Copy</button></p>
-    </div>
     <a class="btn" id="payLink" href="#" target="_blank" rel="noopener">Pay with Monzo</a>
     <p class="note"><strong>Step 2:</strong> after paying, send us your booking details so we know where to send your ticket.</p>
     <a class="btn alt hidden" id="mailLink" href="#" target="_blank" rel="noopener" style="background:#fff;color:var(--accent);border:2px solid var(--accent)">Send details by email</a>
@@ -101,13 +96,8 @@ $("form").addEventListener("submit", ev => {
   const ref = makeRef(selected.code, q);
   const note = ref + " " + name.slice(0, 20);
   const base = SITE.monzoBase.replace(/\/+$/, "");
-  const isRevolut = /revolut\.me/i.test(base);
-  // Monzo.me accepts the amount and note in the link. Revolut.me links are opened as they are.
-  $("payLink").href = isRevolut ? base : base + "/" + amt.toFixed(2) + "?d=" + encodeURIComponent(note);
-  $("payLink").textContent = isRevolut ? "Open Revolut to pay" : "Pay " + money(amt) + " with Monzo";
-  $("manualPay").classList.toggle("hidden", !isRevolut);
-  $("payAmt").textContent = money(amt);
-  $("payNote").textContent = ref;
+  $("payLink").href = base + "/" + amt.toFixed(2) + "?d=" + encodeURIComponent(note);
+  $("payLink").textContent = "Pay " + money(amt) + " with Monzo";
   $("refBox").textContent = ref;
   const msg = "Booking " + ref + "\nName: " + name + "\nEmail: " + email + "\nPhone: " + ($("phone").value.trim() || "-") +
     "\nTickets: " + q + " x " + selected.label + " (" + money(amt) + ")" +
@@ -127,13 +117,6 @@ $("form").addEventListener("submit", ev => {
   rows.forEach(([k, v]) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; dl.append(dt, dd); });
   $("form").classList.add("hidden"); $("pay").classList.remove("hidden"); window.scrollTo(0, 0);
 });
-async function copyText(text, btn) {
-  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied ✓"; }
-  catch (e) { btn.textContent = "Select & copy"; }
-  setTimeout(() => btn.textContent = "Copy", 2000);
-}
-$("copyAmt").addEventListener("click", e => copyText($("payAmt").textContent.replace("£", ""), e.target));
-$("copyNote").addEventListener("click", e => copyText($("payNote").textContent, e.target));
 $("back").addEventListener("click", e => { e.preventDefault(); $("pay").classList.add("hidden"); $("form").classList.remove("hidden"); });
 </script>
 </body>
