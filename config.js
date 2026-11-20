@@ -1,10 +1,10 @@
 /* ============ EDIT THIS FILE ONLY ============ */
 const SITE = {
   eventName: "Live Music Night",
-  when: "Saturday 00 Month 2026 · Doors 6:30pm",
-  where: "Your Community Centre, Address, Town",
-  about: "An evening of live music with great local artists. Choose music only, or add a hot meal to your ticket.",
-  contact: "Questions? Email you@example.com",
+  when: "Friday 04 December 2026 · from 6:30pm to 9:30pm",
+  where: "Winchburgh Bowling Centre, Craigton Place, Winchburgh, EH52 6RW",
+  about: "An evening of live music with great local artists. Time for Families to get togeter for little relaxation and fun.Live band by MusicVifs (Telugu, Tamil, Hindi) & Dance performance by Vbeatz creative.",
+  contact: "Questions? Email raghava.bezwada@gmail.com",
 
   // Your Monzo.me link WITHOUT an amount, e.g. "https://monzo.me/musicnight"
   monzoBase: "https://monzo.me/yourname",
