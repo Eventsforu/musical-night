@@ -29,8 +29,6 @@
 
     <h2 style="margin-top:22px">2. Your details</h2>
     <label class="field">Full name <input type="text" id="name" autocomplete="name"></label>
-    <label class="field">Email <input type="email" id="email" autocomplete="email"></label>
-    <label class="field">Phone (optional) <input type="tel" id="phone" autocomplete="tel"></label>
     <p class="note hidden" id="dietWrap" style="background:#fff4ec;border:1px solid var(--line);border-radius:10px;padding:10px 12px"><strong>Food allergy notice:</strong> our food may contain or come into contact with common allergens such as nuts, gluten, milk, eggs and soya. If you or anyone in your group has an allergy or dietary requirement, please speak to a member of our team on the day before you eat.</p>
     <div class="err" id="err"></div>
     <button type="submit">Continue to payment</button>
@@ -48,10 +46,7 @@
       <p style="margin:6px 0 0">Note / reference: <strong id="payNote"></strong> <button type="button" class="alt" id="copyNote" style="display:inline-block;width:auto;padding:4px 10px;margin:0 0 0 6px;font-size:.85rem">Copy</button></p>
     </div>
     <a class="btn" id="payLink" href="#" target="_blank" rel="noopener">Pay now</a>
-    <p style="color:#b91c1c;font-weight:800;font-size:1.1rem;line-height:1.4;margin:16px 0 4px;padding:12px;border:2px solid #b91c1c;border-radius:10px;background:#fef2f2">STEP 2 – DON'T SKIP: after paying, tap a button below to send us your booking details. We can't send your ticket without them.</p>
-    <a class="btn alt hidden" id="mailLink" href="#" target="_blank" rel="noopener" style="background:#fff;color:var(--accent);border:2px solid var(--accent)">Send details by email</a>
-    <a class="btn alt hidden" id="waLink" href="#" target="_blank" rel="noopener" style="background:#fff;color:var(--accent);border:2px solid var(--accent)">Send details by WhatsApp</a>
-    <p class="note"><strong>Important:</strong> leave the reference in the payment note. Your ticket (with a QR code) is sent once your payment is confirmed.</p>
+    <p class="note"><strong>Important:</strong> leave the reference in the payment note, and bring this reference and your name to the event.</p>
     <p class="note"><a href="#" id="back">← Start again</a></p>
   </div>
 
@@ -91,9 +86,8 @@ const showErr = m => { $("err").textContent = m; $("err").style.display = m ? "b
 
 $("form").addEventListener("submit", ev => {
   ev.preventDefault();
-  const name = $("name").value.trim(), email = $("email").value.trim();
+  const name = $("name").value.trim();
   if (!name) return showErr("Please enter your name.");
-  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr("Please enter a valid email address.");
   showErr("");
   const q = qty(), amt = selected.price * q;
   const ref = makeRef(selected.code, q);
@@ -107,16 +101,7 @@ $("form").addEventListener("submit", ev => {
   $("payAmt").textContent = money(amt);
   $("payNote").textContent = ref;
   $("refBox").textContent = ref;
-  const msg = "Booking " + ref + "\nName: " + name + "\nEmail: " + email + "\nPhone: " + ($("phone").value.trim() || "-") +
-    "\nTickets: " + q + " x " + selected.label + " (" + money(amt) + ")" +
-    "\nChildren under 12 (free): " + kids() +
-    "";
-  const hasMail = !!SITE.organiserEmail, hasWa = !!SITE.organiserWhatsApp;
-  $("mailLink").classList.toggle("hidden", !hasMail);
-  $("waLink").classList.toggle("hidden", !hasWa);
-  if (hasMail) $("mailLink").href = "mailto:" + SITE.organiserEmail + "?subject=" + encodeURIComponent(SITE.eventName + " booking " + ref) + "&body=" + encodeURIComponent(msg);
-  if (hasWa) $("waLink").href = "https://wa.me/" + SITE.organiserWhatsApp + "?text=" + encodeURIComponent(msg);
-  const rows = [["Name", name], ["Email", email], ["Phone", $("phone").value.trim() || "—"],
+  const rows = [["Name", name],
     ["Tickets", q + " × " + selected.label],
     ["Children under 12 (free)", String(kids())],
     ["Amount", money(amt)]];
