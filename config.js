@@ -7,12 +7,12 @@ const SITE = {
   contact: "Questions? Email raghava.bezwada@gmail.com",
 
   // Your Monzo.me link WITHOUT an amount, e.g. "https://monzo.me/musicnight"
-  monzoBase: "https://monzo.me/yourname",
+  monzoBase: "https://monzo.me/raghavabezwada",
 
   // Where customers send their booking details after paying (so you know who to send the ticket to).
   // Email address, and/or WhatsApp number in international format with no + or spaces, e.g. "447700900123". Leave "" to hide.
-  organiserEmail: "you@example.com",
-  organiserWhatsApp: "",
+  organiserEmail: "raghava.bezwada@gmail.com",
+  organiserWhatsApp: "447841193412",
 
   // Start of every booking reference, e.g. MN-F2-7K3Q
   refPrefix: "MN",
